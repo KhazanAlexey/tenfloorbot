@@ -6,6 +6,12 @@ require('dotenv').config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
+let rule = new schedule.RecurrenceRule();
+
+// your timezone
+rule.tz = 'Europe/Minsk';
+
+
 const bot = new TelegramApi(token, {polling: true});
 
 let scheduledJob = {}
@@ -29,8 +35,8 @@ const schedulePoll = (chatId) => {
     const minskTimeForReminder = '13:00'; // 1:00 PM Minsk time
 
     // Convert Minsk time to Tokyo time
-    const tokyoTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz('Asia/Tokyo').format('HH:mm');
-    const tokyoTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz('Asia/Tokyo').format('HH:mm');
+    const tokyoTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').format('HH:mm');
+    const tokyoTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').format('HH:mm');
 console.log('tokyoTimeForPoll',tokyoTimeForPoll)
     // Schedule jobs using Tokyo time
     scheduledJob[chatId] = schedule.scheduleJob(`00 ${tokyoTimeForPoll.split(':')[0]} * * 2,4`, async () => {
@@ -47,8 +53,7 @@ const getNextPollTime = (chatId) => {
         const nextInvocation = scheduledJob[chatId].nextInvocation();
         // moment.locale('ru');
         console.log(new Date(nextInvocation))
-        console.log(moment(nextInvocation))
-        const minskTime = moment(new Date(nextInvocation)).tz('Europe/Minsk').format('dddd, YYYY-MM-DD HH:mm:ss');
+        const minskTime = moment(new Date(nextInvocation)).format('dddd, YYYY-MM-DD HH:mm:ss');
         return `${minskTime}`
     }
     return 'Опрос не запланирован. выполните /start@ten_floor_bot для автоматического запуска опроса по расписанию';
