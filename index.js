@@ -24,16 +24,21 @@ const startPoll = async (chatId) => {
 }
 
 const schedulePoll = (chatId) => {
+    // Define the desired Minsk time for scheduling
+    const minskTimeForPoll = '10:00'; // 10:00 AM Minsk time
+    const minskTimeForReminder = '13:00'; // 1:00 PM Minsk time
 
-    // '*/1 * * * *'
-    // 0 11 * * 3,5
-    scheduledJob[chatId] = schedule.scheduleJob('00 10 * * 2,4', async () => {
+    // Convert Minsk time to Tokyo time
+    const tokyoTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz('Asia/Tokyo').format('HH:mm');
+    const tokyoTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz('Asia/Tokyo').format('HH:mm');
+
+    // Schedule jobs using Tokyo time
+    scheduledJob[chatId] = schedule.scheduleJob(`00 ${tokyoTimeForPoll.split(':')[0]} * * 2,4`, async () => {
         await startPoll(chatId);
     });
-    voteReminder[chatId] = schedule.scheduleJob('00 13 * * 2,4', async () => {
-            await bot.sendMessage(chatId, "Пожалуйста, пройдите опрос по обедам, если опроса нет, напомните администратору выполнить команду /obed@ten_floor_bot.");
+    voteReminder[chatId] = schedule.scheduleJob(`00 ${tokyoTimeForReminder.split(':')[0]} * * 2,4`, async () => {
+        await bot.sendMessage(chatId, "Пожалуйста, пройдите опрос по обедам, если опроса нет, напомните администратору выполнить команду /obed@ten_floor_bot.");
     });
-
 }
 
 
@@ -41,8 +46,9 @@ const getNextPollTime = (chatId) => {
     console.log(scheduledJob);
     if (scheduledJob[chatId]) {
         const nextInvocation = scheduledJob[chatId].nextInvocation();
+
         moment.locale('ru');
-        const minskTime = moment(new Date(nextInvocation)).tz('Europe/Minsk').format('dddd, YYYY-MM-DD HH:mm:ss');
+        const minskTime = moment(nextInvocation).tz('Asia/Tokyo').tz('Europe/Minsk').format('dddd, YYYY-MM-DD HH:mm:ss');
         return `${minskTime}`
     }
     return 'Опрос не запланирован. выполните /start@ten_floor_bot для автоматического запуска опроса по расписанию';
