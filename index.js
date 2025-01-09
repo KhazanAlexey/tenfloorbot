@@ -34,15 +34,13 @@ const schedulePoll = (chatId) => {
     const minskTimeForPoll = '10:00'; // 10:00 AM Minsk time
     const minskTimeForReminder = '13:00'; // 1:00 PM Minsk time
 
-    // Convert Minsk time to Tokyo time
-    const tokyoTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').format('HH:mm');
-    const tokyoTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').format('HH:mm');
-console.log('tokyoTimeForPoll',tokyoTimeForPoll)
-    // Schedule jobs using Tokyo time
-    scheduledJob[chatId] = schedule.scheduleJob(`00 ${tokyoTimeForPoll.split(':')[0]} * * 2,4`, async () => {
+    const minskTimeForPollFormated = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').format('HH:mm').split(':');
+    const minskTimeForReminderFormated = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').format('HH:mm').split(':');
+
+    scheduledJob[chatId] = schedule.scheduleJob(`${minskTimeForPollFormated[1]} ${minskTimeForPollFormated[0]} * * 2,4`, async () => {
         await startPoll(chatId);
     });
-    voteReminder[chatId] = schedule.scheduleJob(`00 ${tokyoTimeForReminder.split(':')[0]} * * 2,4`, async () => {
+    voteReminder[chatId] = schedule.scheduleJob(`${minskTimeForReminderFormated[1]} ${minskTimeForReminderFormated[0]} * * 2,4`, async () => {
         await bot.sendMessage(chatId, "Пожалуйста, пройдите опрос по обедам, если опроса нет, напомните администратору выполнить команду /obed@ten_floor_bot.");
     });
 }
@@ -51,8 +49,7 @@ console.log('tokyoTimeForPoll',tokyoTimeForPoll)
 const getNextPollTime = (chatId) => {
     if (scheduledJob[chatId]) {
         const nextInvocation = scheduledJob[chatId].nextInvocation();
-        // moment.locale('ru');
-        console.log(new Date(nextInvocation))
+        moment.locale('ru');
         const minskTime = moment(new Date(nextInvocation)).format('dddd, YYYY-MM-DD HH:mm:ss');
         return `${minskTime}`
     }
