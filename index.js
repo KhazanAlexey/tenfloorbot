@@ -54,8 +54,8 @@ const cancelNextPoll = (chatId) => {
         scheduledJob[chatId] = null;
     }
     if (voteReminder[chatId]) {
-        scheduledJob[chatId].cancel();
-        scheduledJob[chatId] = null;
+        voteReminder[chatId].cancel();
+        voteReminder[chatId] = null;
     }
 }
 
