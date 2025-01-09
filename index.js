@@ -29,8 +29,8 @@ const schedulePoll = (chatId) => {
     const minskTimeForReminder = '13:00'; // 1:00 PM Minsk time
 
     // Convert Minsk time to Tokyo time
-    const tokyoTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz('Asia/Tokyo').format('HH:mm');
-    const tokyoTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz('Asia/Tokyo').format('HH:mm');
+    const tokyoTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz('UTC').format('HH:mm');
+    const tokyoTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz('UTC').format('HH:mm');
 console.log('tokyoTimeForPoll',tokyoTimeForPoll)
     // Schedule jobs using Tokyo time
     scheduledJob[chatId] = schedule.scheduleJob(`00 ${tokyoTimeForPoll.split(':')[0]} * * 2,4`, async () => {
