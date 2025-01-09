@@ -31,7 +31,7 @@ const schedulePoll = (chatId) => {
     // Convert Minsk time to Tokyo time
     const tokyoTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz('Asia/Tokyo').format('HH:mm');
     const tokyoTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz('Asia/Tokyo').format('HH:mm');
-
+console.log('tokyoTimeForPoll',tokyoTimeForPoll)
     // Schedule jobs using Tokyo time
     scheduledJob[chatId] = schedule.scheduleJob(`00 ${tokyoTimeForPoll.split(':')[0]} * * 2,4`, async () => {
         await startPoll(chatId);
@@ -43,12 +43,12 @@ const schedulePoll = (chatId) => {
 
 
 const getNextPollTime = (chatId) => {
-    console.log(scheduledJob);
     if (scheduledJob[chatId]) {
         const nextInvocation = scheduledJob[chatId].nextInvocation();
-
-        moment.locale('ru');
-        const minskTime = moment(nextInvocation).tz('Asia/Tokyo').tz('Europe/Minsk').format('dddd, YYYY-MM-DD HH:mm:ss');
+        // moment.locale('ru');
+        console.log(new Date(nextInvocation))
+        // console.log(moment(nextInvocation))
+        const minskTime = moment(nextInvocation).tz('Europe/Minsk').format('dddd, YYYY-MM-DD HH:mm:ss');
         return `${minskTime}`
     }
     return 'Опрос не запланирован. выполните /start@ten_floor_bot для автоматического запуска опроса по расписанию';
