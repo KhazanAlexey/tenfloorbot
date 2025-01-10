@@ -71,7 +71,7 @@ const start = async () => {
 
     await bot.setMyCommands([
         {command: '/start', description: 'Запустить автоматическое создание опрсов по средам и четвергам в 10.00'},
-        {command: '/obed', description: 'Запустить опроса по обедам прямо сейчас единожды'},
+        {command: '/obed', description: 'Запустить опрос по обедам прямо сейчас единожды'},
         {command: '/cancel_obed', description: 'Отменить автоматичевский запуск опроса'},
         {command: '/when_next_obed', description: 'Узнать время следующего опроса'}
     ]);
