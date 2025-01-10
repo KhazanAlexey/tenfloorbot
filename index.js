@@ -88,7 +88,7 @@ const start = async () => {
                 const isAllowedUser = msg.from.username === 'AlexeyGrom';
 
                 if (!isAdmin && !isAllowedUser) {
-                    return bot.sendMessage(chatId, `Прости ${msg.from.first_name}, эта команда доступна только администраторам и пользователю @AlexeyGrom.`);
+                    return bot.sendMessage(chatId, `Прости ${msg.from.first_name}, эта команда доступна только администраторам.`);
                 }
             }
 
