@@ -1,21 +1,15 @@
 const TelegramApi = require('node-telegram-bot-api');
-const moment = require('moment-timezone')
+const moment = require('moment-timezone');
 const schedule = require('node-schedule');
 const variants = require("./const");
 require('dotenv').config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
-let rule = new schedule.RecurrenceRule();
+const bot = new TelegramApi(token, { polling: true });
 
-// your timezone
-rule.tz = 'Europe/Minsk';
-
-
-const bot = new TelegramApi(token, {polling: true});
-
-let scheduledJob = {}
-let voteReminder={}
+let scheduledJob = {};
+let voteReminder = {};
 
 const startPoll = async (chatId) => {
     const today = new Date();
@@ -26,35 +20,34 @@ const startPoll = async (chatId) => {
     const formattedDate = tomorrow.toLocaleDateString('ru-RU', options);
 
     const question = `Выберите вариант обеда на завтра (${formattedDate}):`;
-    await bot.sendPoll(chatId, question, [ variants.var1, variants.var2, variants.var3], { is_anonymous: false });
-}
+    await bot.sendPoll(chatId, question, [variants.var1, variants.var2, variants.var3], { is_anonymous: false });
+};
 
 const schedulePoll = (chatId) => {
-    // Define the desired Minsk time for scheduling
-    const minskTimeForPoll = '10:00'; // 10:00 AM Minsk time
-    const minskTimeForReminder = '13:00'; // 1:00 PM Minsk time
+    const minskTimeForPoll = '10:00';
+    const minskTimeForReminder = '13:00';
 
-    const minskTimeForPollFormated = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').format('HH:mm').split(':');
-    const minskTimeForReminderFormated = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').format('HH:mm').split(':');
+    const serverTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
+    const serverTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
 
-    scheduledJob[chatId] = schedule.scheduleJob(`${minskTimeForPollFormated[1]} ${minskTimeForPollFormated[0]} * * 2,4`, async () => {
+    scheduledJob[chatId] = schedule.scheduleJob(`${serverTimeForPoll[1]} ${serverTimeForPoll[0]} * * 2,4`, async () => {
         await startPoll(chatId);
     });
-    voteReminder[chatId] = schedule.scheduleJob(`${minskTimeForReminderFormated[1]} ${minskTimeForReminderFormated[0]} * * 2,4`, async () => {
+    voteReminder[chatId] = schedule.scheduleJob(`${serverTimeForReminder[1]} ${serverTimeForReminder[0]} * * 2,4`, async () => {
         await bot.sendMessage(chatId, "Пожалуйста, пройдите опрос по обедам, если опроса нет, напомните администратору выполнить команду /obed@ten_floor_bot.");
     });
-}
-
+};
 
 const getNextPollTime = (chatId) => {
     if (scheduledJob[chatId]) {
         const nextInvocation = scheduledJob[chatId].nextInvocation();
         moment.locale('ru');
-        const minskTime = moment(new Date(nextInvocation)).format('dddd, YYYY-MM-DD HH:mm:ss');
-        return `${minskTime}`
+        console.log('moment(nextInvocation)',moment(nextInvocation))
+        const minskTime = moment(nextInvocation).tz('Europe/Minsk').format('dddd, YYYY-MM-DD HH:mm:ss');
+        return `${minskTime}`;
     }
     return 'Опрос не запланирован. выполните /start@ten_floor_bot для автоматического запуска опроса по расписанию';
-}
+};
 
 const cancelNextPoll = (chatId) => {
     if (scheduledJob[chatId]) {
@@ -65,15 +58,14 @@ const cancelNextPoll = (chatId) => {
         voteReminder[chatId].cancel();
         voteReminder[chatId] = null;
     }
-}
+};
 
 const start = async () => {
-
     await bot.setMyCommands([
-        {command: '/start', description: 'Запустить автоматическое создание опрсов по средам и четвергам в 10.00'},
-        {command: '/obed', description: 'Запустить опрос по обедам прямо сейчас единожды'},
-        {command: '/cancel_obed', description: 'Отменить автоматический запуск опроса'},
-        {command: '/when_next_obed', description: 'Узнать время следующего опроса'}
+        { command: '/start', description: 'Запустить автоматическое создание опрсов по средам и четвергам в 10.00' },
+        { command: '/obed', description: 'Запустить опрос по обедам прямо сейчас единожды' },
+        { command: '/cancel_obed', description: 'Отменить автоматический запуск опроса' },
+        { command: '/when_next_obed', description: 'Узнать время следующего опроса' }
     ]);
 
     bot.on('message', async msg => {
@@ -93,21 +85,21 @@ const start = async () => {
             }
 
             if (text === '/start@ten_floor_bot') {
-                schedulePoll(chatId)
+                schedulePoll(chatId);
                 const nextPollTime = getNextPollTime(chatId);
                 return bot.sendMessage(chatId, `Автоматический опрос запущен. Следующий опрос запланирован на: ${nextPollTime}`);
             }
 
             if (text === '/obed@ten_floor_bot') {
-
                 bot.sendMessage(chatId, `Опрос был запущен: ${msg.from.first_name}`);
-
                 return startPoll(chatId);
             }
+
             if (text === '/cancel_obed@ten_floor_bot') {
                 cancelNextPoll(chatId);
                 return bot.sendMessage(chatId, 'Запуск опроса по расписанию отменен.');
             }
+
             if (text === '/when_next_obed@ten_floor_bot') {
                 const nextPollTime = getNextPollTime(chatId);
                 return bot.sendMessage(chatId, `Следующий опрос запланирован на: ${nextPollTime}`);
@@ -117,8 +109,6 @@ const start = async () => {
             return bot.sendMessage(chatId, 'Произошла какая то ошибочка!)');
         }
     });
-}
+};
 
 start();
-
-
