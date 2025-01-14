@@ -29,7 +29,7 @@ const schedulePoll = (chatId) => {
 
     const serverTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
     const serverTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
-
+console.log({serverTimeForPoll,serverTimeForReminder})
     scheduledJob[chatId] = schedule.scheduleJob(`${serverTimeForPoll[1]} ${serverTimeForPoll[0]} * * 2,4`, async () => {
         await startPoll(chatId);
     });
