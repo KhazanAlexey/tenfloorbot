@@ -24,8 +24,8 @@ const startPoll = async (chatId) => {
 };
 
 const schedulePoll = (chatId) => {
-    const minskTimeForPoll = '22:50';
-    const minskTimeForReminder = '22:51';
+    const minskTimeForPoll = '23:00';
+    const minskTimeForReminder = '23:01';
 
     const serverTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
     const serverTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
