@@ -19,13 +19,13 @@ const startPoll = async (chatId) => {
     const options = { weekday: 'long', day: 'numeric', month: 'numeric' };
     const formattedDate = tomorrow.toLocaleDateString('ru-RU', options);
 
-    const question = `Выберите вариант обеда на завтра (${formattedDate}):`;
+    const question = `((c) @AlexeyGrom )Выберите вариант обеда на завтра (${formattedDate}):`;
     await bot.sendPoll(chatId, question, [variants.var1, variants.var2, variants.var3], { is_anonymous: false });
 };
 
 const schedulePoll = (chatId) => {
-    const minskTimeForPoll = '23:00';
-    const minskTimeForReminder = '23:01';
+    const minskTimeForPoll = '23:06';
+    const minskTimeForReminder = '23:07';
 
     const serverTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
     const serverTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
@@ -78,7 +78,7 @@ const start = async () => {
             if (restrictedCommands.includes(text)) {
                 const chatMember = await bot.getChatMember(chatId, msg.from.id);
                 const isAdmin = chatMember.status === 'administrator' || chatMember.status === 'creator';
-                const isAllowedUser = msg.from.username === 'AlexeyGrom';
+                const isAllowedUser = msg.from.username === 'AlexeyGrom'|| msg.from.username === 'anna_rudak';
 
                 if (!isAdmin && !isAllowedUser) {
                     return bot.sendMessage(chatId, `Прости ${msg.from.first_name}, эта команда доступна только администраторам.`);
