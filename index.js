@@ -25,15 +25,15 @@ const startPoll = async (chatId) => {
 
 const schedulePoll = (chatId) => {
     const minskTimeForPoll = '10:10';
-    const minskTimeForReminder = '10:11';
+    const minskTimeForReminder = '10:30';
 
     const serverTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
     const serverTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
-
-    scheduledJob[chatId] = schedule.scheduleJob(`0 0 ${serverTimeForPoll[0]} * * 2,3`, async () => {
+console.log({serverTimeForPoll,serverTimeForReminder})
+    scheduledJob[chatId] = schedule.scheduleJob(`0 ${serverTimeForPoll[1]} ${serverTimeForPoll[0]} * * 2,4`, async () => {
         await startPoll(chatId);
     });
-    voteReminder[chatId] = schedule.scheduleJob(`0 0 ${serverTimeForReminder[0]} * * 2,4`, async () => {
+    voteReminder[chatId] = schedule.scheduleJob(`0 ${serverTimeForReminder[1]} ${serverTimeForReminder[0]} * * 2,4`, async () => {
         await bot.sendMessage(chatId, "Пожалуйста, пройдите опрос по обедам, если опроса нет, напомните администратору выполнить команду /obed@ten_floor_bot.");
     });
 };
@@ -42,8 +42,9 @@ const getNextPollTime = (chatId) => {
     if (scheduledJob[chatId]) {
         const nextInvocation = scheduledJob[chatId].nextInvocation();
         moment.locale('ru');
-        console.log('moment(nextInvocation)',moment(nextInvocation))
-        const minskTime = moment(nextInvocation).tz('Europe/Minsk').format('dddd, YYYY-MM-DD HH:mm:ss');
+        console.log('nextInvocation)',nextInvocation)
+        console.log('moment(nextInvocation)',moment(new Date(nextInvocation)))
+        const minskTime = moment(new Date(nextInvocation)).tz('Europe/Minsk').format('dddd, YYYY-MM-DD HH:mm:ss');
         return `${minskTime}`;
     }
     return 'Опрос не запланирован. выполните /start@ten_floor_bot для автоматического запуска опроса по расписанию';
