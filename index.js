@@ -24,16 +24,16 @@ const startPoll = async (chatId) => {
 };
 
 const schedulePoll = (chatId) => {
-    const minskTimeForPoll = '19:30';
-    const minskTimeForReminder = '19:31';
+    const minskTimeForPoll = '10:10';
+    const minskTimeForReminder = '10:11';
 
     const serverTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
     const serverTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
-console.log({serverTimeForPoll,serverTimeForReminder})
-    scheduledJob[chatId] = schedule.scheduleJob(`${serverTimeForPoll[1]} ${serverTimeForPoll[0]} * * 2,4`, async () => {
+
+    scheduledJob[chatId] = schedule.scheduleJob(`0 0 ${serverTimeForPoll[0]} * * 2,3`, async () => {
         await startPoll(chatId);
     });
-    voteReminder[chatId] = schedule.scheduleJob(`${serverTimeForReminder[1]} ${serverTimeForReminder[0]} * * 2,4`, async () => {
+    voteReminder[chatId] = schedule.scheduleJob(`0 0 ${serverTimeForReminder[0]} * * 2,4`, async () => {
         await bot.sendMessage(chatId, "Пожалуйста, пройдите опрос по обедам, если опроса нет, напомните администратору выполнить команду /obed@ten_floor_bot.");
     });
 };
