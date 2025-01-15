@@ -19,21 +19,21 @@ const startPoll = async (chatId) => {
     const options = { weekday: 'long', day: 'numeric', month: 'numeric' };
     const formattedDate = tomorrow.toLocaleDateString('ru-RU', options);
 
-    const question = `((c) @AlexeyGrom )Выберите вариант обеда на завтра (${formattedDate}):`;
+    const question = `Выберите вариант обеда на завтра (${formattedDate}):`;
     await bot.sendPoll(chatId, question, [variants.var1, variants.var2, variants.var3], { is_anonymous: false });
 };
 
 const schedulePoll = (chatId) => {
-    const minskTimeForPoll = '23:06';
-    const minskTimeForReminder = '23:07';
+    const minskTimeForPoll = '8:00';
+    const minskTimeForReminder = '8:10';
 
     const serverTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
     const serverTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
-console.log({serverTimeForPoll,serverTimeForReminder})
-    scheduledJob[chatId] = schedule.scheduleJob(`0 ${serverTimeForPoll[1]} ${serverTimeForPoll[0]} * * 2,3`, async () => {
+
+    scheduledJob[chatId] = schedule.scheduleJob(`0 ${serverTimeForPoll[1]} ${serverTimeForPoll[0]} * * 2,4`, async () => {
         await startPoll(chatId);
     });
-    voteReminder[chatId] = schedule.scheduleJob(`0 ${serverTimeForReminder[1]} ${serverTimeForReminder[0]} * * 2,3`, async () => {
+    voteReminder[chatId] = schedule.scheduleJob(`0 ${serverTimeForReminder[1]} ${serverTimeForReminder[0]} * * 2,4`, async () => {
         await bot.sendMessage(chatId, "Пожалуйста, пройдите опрос по обедам, если опроса нет, напомните администратору выполнить команду /obed@ten_floor_bot.");
     });
 };
@@ -42,8 +42,7 @@ const getNextPollTime = (chatId) => {
     if (scheduledJob[chatId]) {
         const nextInvocation = scheduledJob[chatId].nextInvocation();
         moment.locale('ru');
-        console.log('nextInvocation)',nextInvocation)
-        console.log('moment(nextInvocation)',moment(new Date(nextInvocation)))
+
         const minskTime = moment(new Date(nextInvocation)).tz('Europe/Minsk').format('dddd, YYYY-MM-DD HH:mm:ss');
         return `${minskTime}`;
     }
