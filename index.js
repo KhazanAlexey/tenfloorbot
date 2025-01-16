@@ -24,8 +24,8 @@ const startPoll = async (chatId) => {
 };
 
 const schedulePoll = (chatId) => {
-    const minskTimeForPoll = '8:00';
-    const minskTimeForReminder = '8:10';
+    const minskTimeForPoll = '9:45';
+    const minskTimeForReminder = '14:00';
 
     const serverTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
     const serverTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
@@ -34,7 +34,7 @@ const schedulePoll = (chatId) => {
         await startPoll(chatId);
     });
     voteReminder[chatId] = schedule.scheduleJob(`0 ${serverTimeForReminder[1]} ${serverTimeForReminder[0]} * * 2,4`, async () => {
-        await bot.sendMessage(chatId, "Пожалуйста, пройдите опрос по обедам, если опроса нет, напомните администратору выполнить команду /obed@ten_floor_bot.");
+        await bot.sendMessage(chatId, `Пожалуйста, пройдите опрос по обедам. Опрос был опрубликован сегодня в ${minskTimeForPoll}`);
     });
 };
 
