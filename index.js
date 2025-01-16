@@ -11,6 +11,9 @@ const bot = new TelegramApi(token, { polling: true });
 let scheduledJob = {};
 let voteReminder = {};
 
+const minskTimeForPoll = '9:45';
+const minskTimeForReminder = '14:00';
+
 const startPoll = async (chatId) => {
     const today = new Date();
     const tomorrow = new Date(today);
@@ -24,8 +27,7 @@ const startPoll = async (chatId) => {
 };
 
 const schedulePoll = (chatId) => {
-    const minskTimeForPoll = '9:45';
-    const minskTimeForReminder = '14:00';
+
 
     const serverTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
     const serverTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
@@ -62,7 +64,7 @@ const cancelNextPoll = (chatId) => {
 
 const start = async () => {
     await bot.setMyCommands([
-        { command: '/start', description: 'Запустить автоматическое создание опрсов по средам и четвергам в 10.00' },
+        { command: '/start', description: `Запустить автоматическое создание опрсов по средам и четвергам в ${minskTimeForPoll}` },
         { command: '/obed', description: 'Запустить опрос по обедам прямо сейчас единожды' },
         { command: '/cancel_obed', description: 'Отменить автоматический запуск опроса' },
         { command: '/when_next_obed', description: 'Узнать время следующего опроса' }
