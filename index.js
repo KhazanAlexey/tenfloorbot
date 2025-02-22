@@ -2,13 +2,19 @@ const TelegramApi = require('node-telegram-bot-api');
 const moment = require('moment-timezone');
 const schedule = require('node-schedule');
 const variants = require("./const");
+
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
+
+const genAI = new GoogleGenerativeAI("AIzaSyDEpA0G-pXtmWJKFP9FUYM1rGrFgbSmn6g");
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramApi(token, { polling: true });
 
 let scheduledJob = {};
 let voteReminder = {};
+let chatHistory = {};
 
 const minskTimeForPoll = '9:45';
 const minskTimeForReminder = '14:00';
@@ -46,8 +52,7 @@ const startPoll = async (chatId) => {
 };
 
 const schedulePoll = (chatId) => {
-
-    cancelNextPoll(chatId)
+    cancelNextPoll(chatId);
 
     const serverTimeForPoll = moment.tz(minskTimeForPoll, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
     const serverTimeForReminder = moment.tz(minskTimeForReminder, 'HH:mm', 'Europe/Minsk').tz(moment.tz.guess()).format('HH:mm').split(':');
@@ -135,26 +140,77 @@ const handleAdminScheduleView = async (msg) => {
     }
 };
 
+
+const handleSpeakOutCommand = async (chatId) => {
+    const TEN_MINUTES = 7 * 60 * 1000; // 7 minutes in milliseconds
+    const messages = chatHistory[chatId] || [];
+
+    // Filter messages
+    const filteredMessages = [];
+    for (let i = 0; i < messages.length - 1; i++) {
+        const currentMessage = messages[i];
+        const nextMessage = messages[i + 1];
+
+        const timeDifference = new Date(nextMessage.timestamp).getTime() - new Date(currentMessage.timestamp).getTime();
+        const containsBotCommand = currentMessage?.message?.includes('/') || currentMessage?.message?.includes('@NewCustom0Bot') || currentMessage?.message?.includes('@ten_floor_bot');
+
+        if (timeDifference <= TEN_MINUTES && !containsBotCommand) {
+            filteredMessages.push(currentMessage);
+        }
+    }
+
+    const context = filteredMessages.map(entry => `${entry.timestamp} - ${entry.message}`).join('\n');
+
+    // const result = await model.generateContent(`${context} Продолжи диалог от своего имени, отвечай не соблюдая формат диалога, не используй 'я:'`);
+    //
+    //   bot.sendMessage(chatId, result.response.text());
+
+    botSay(chatId,context)
+};
+
+const botSay =async (chatId,message) => {
+    const result = await model.generateContent(`${message} Продолжи диалог от своего имени, отвечай не соблюдая формат диалога, не используй 'я:'`);
+
+    bot.sendMessage(chatId, result.response.text());
+}
+
+
 const start = async () => {
     await bot.deleteMyCommands({ scope: { type: 'all_private_chats' } });
 
-    // Устанавливаем команды только для групповых чатов
     await bot.setMyCommands([
         { command: '/start', description: `Запустить автоматическое создание опросов по средам и четвергам в ${minskTimeForPoll}` },
         { command: '/obed', description: 'Запустить опрос по обедам прямо сейчас единожды' },
         { command: '/cancel_obed', description: 'Отменить автоматический запуск опроса' },
-        { command: '/when_next_obed', description: 'Узнать время следующего опроса' }
+        { command: '/when_next_obed', description: 'Узнать время следующего опроса' },
+        { command: '/say', description: 'Попросить бота высказаться' }
     ], { scope: { type: 'all_group_chats' } });
 
     bot.on('message', async msg => {
         const text = msg.text;
         const chatId = msg.chat.id;
 
+        if (!chatHistory[chatId]) {
+            chatHistory[chatId] = [];
+        }
+
+        // Exclude messages with photos, videos, or animations
+        if (msg.photo || msg.video || msg.animation) {
+            return;
+        }
+        // Convert Unix timestamp to human-readable format
+        const timestamp = moment.unix(msg.date).format('YYYY-MM-DD HH:mm:ss');
+        const userName = msg.from.username || msg.from.first_name;
+        chatHistory[chatId].push({ message: `${userName}: ${text}`, timestamp });
+
+        // Keep only the last 20 messages
+        if (chatHistory[chatId].length > 30) {
+            chatHistory[chatId].shift();
+        }
         try {
-           await handleAdminScheduleView(msg)
-            // Handle private messages
+            await handleAdminScheduleView(msg);
+
             if (msg.chat.type === 'private') {
-                // Send welcome message for /start command
                 if (text === '/start') {
                     return sendWelcomeMessage(chatId, msg.from.first_name);
                 }
@@ -163,22 +219,31 @@ const start = async () => {
                     return bot.sendMessage(chatId, 'Список полезных ссылок:', usefulLinksKeyboard);
                 }
 
-                // Show main menu for any other message in private chat
                 return bot.sendMessage(chatId, 'Выберите опцию:', mainMenuKeyboard);
+            }
+
+            if (msg?.reply_to_message?.from?.username==='NewCustom0Bot'||
+                msg?.reply_to_message?.from?.username==='ten_floor_bot'||
+                text.startsWith('@ten_floor_bot') || text.startsWith('@NewCustom0Bot')) {
+                return botSay(chatId,text);
+            }
+
+            if (text === '/say@ten_floor_bot' || text === '/say@NewCustom0Bot') {
+                return handleSpeakOutCommand(chatId, text);
             }
 
             const restrictedCommands = ['/start@ten_floor_bot', '/obed@ten_floor_bot', '/cancel_obed@ten_floor_bot'];
             if (restrictedCommands.includes(text)) {
                 const chatMember = await bot.getChatMember(chatId, msg.from.id);
                 const isAdmin = chatMember.status === 'administrator' || chatMember.status === 'creator';
-                const isAllowedUser = msg.from.username === 'AlexeyGrom' || msg.from.username === 'anna_rudak';
+                const isAllowedUser = msg.from.username === 'AlexeyGrom';
 
                 if (!isAdmin && !isAllowedUser) {
                     return bot.sendMessage(chatId, `Прости ${msg.from.first_name}, эта команда доступна только администраторам.`);
                 }
             }
 
-            if (text === '/start@ten_floor_bot'||text ==="/start@NewCustom0Bot") {
+            if (text === '/start@ten_floor_bot' || text === "/start@NewCustom0Bot") {
                 schedulePoll(chatId);
                 const nextPollTime = getNextPollTime(chatId);
                 return bot.sendMessage(chatId, `Автоматический опрос запущен. Следующий опрос запланирован на: ${nextPollTime}`);
@@ -200,7 +265,7 @@ const start = async () => {
             }
 
         } catch (e) {
-            return bot.sendMessage(chatId, 'Произошла какая то ошибочка!)');
+            return bot.sendMessage(chatId, 'Я устал, поговорим завтра!)');
         }
     });
 };
